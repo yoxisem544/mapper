@@ -27,8 +27,8 @@ public struct Mapper {
     ///                                            initializer fails with the passed rawValue
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type T
-    public func from<T: RawRepresentable>(_ field: String) throws -> T {
-        let object = try self.JSONFromField(field)
+    public func from<T: RawRepresentable>(_ field: String, delimiter: String = ".") throws -> T {
+        let object = try self.JSONFromField(field, delimiter: delimiter)
         guard let rawValue = object as? T.RawValue else {
             throw MapperError.typeMismatchError(field: field, value: object, type: T.RawValue.self)
         }
@@ -48,8 +48,8 @@ public struct Mapper {
     ///                    entire data set
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type T otherwise nil
-    public func optionalFrom<T: RawRepresentable>(_ field: String) -> T? {
-        return try? self.from(field)
+    public func optionalFrom<T: RawRepresentable>(_ field: String, delimiter: String = ".") -> T? {
+        return try? self.from(field, delimiter: delimiter)
     }
 
     /// Get an optional value from the given fields and source data. This returns the first non-nil value
@@ -58,9 +58,9 @@ public struct Mapper {
     /// - parameter fields: The array of fields to check from the source data.
     ///
     /// - returns: The first non-nil value to be produced from the array of fields, or nil if none exist
-    public func optionalFrom<T: RawRepresentable>(_ fields: [String]) -> T? {
+    public func optionalFrom<T: RawRepresentable>(_ fields: [String], delimiter: String = ".") -> T? {
         for field in fields {
-            if let value: T = try? self.from(field) {
+            if let value: T = try? self.from(field, delimiter: delimiter) {
                 return value
             }
         }
@@ -76,9 +76,9 @@ public struct Mapper {
     /// - throws: MapperError.missingFieldError if none of the fields have an acceptable value.
     ///
     /// - returns: The first non-nil value to be produced from the array of fields.
-    public func from<T: RawRepresentable>(_ fields: [String]) throws -> T {
+    public func from<T: RawRepresentable>(_ fields: [String], delimiter: String = ".") throws -> T {
         for field in fields {
-            if let value: T = try? self.from(field) {
+            if let value: T = try? self.from(field, delimiter: delimiter) {
                 return value
             }
         }
@@ -101,10 +101,10 @@ public struct Mapper {
     /// - throws: Any other error produced by a Convertible implementation
     ///
     /// - returns: An array of the RawRepresentable value, with all nils removed
-    public func from<T: RawRepresentable>(_ field: String, defaultValue: T? = nil) throws ->
+    public func from<T: RawRepresentable>(_ field: String, defaultValue: T? = nil, delimiter: String = ".") throws ->
         [T] where T.RawValue: Convertible, T.RawValue == T.RawValue.ConvertedType
     {
-        let value = try self.JSONFromField(field)
+        let value = try self.JSONFromField(field, delimiter: delimiter)
         guard let array = value as? [Any] else {
             throw MapperError.typeMismatchError(field: field, value: value, type: [Any].self)
         }
@@ -125,10 +125,10 @@ public struct Mapper {
     /// - parameter defaultValue: The value to use if the rawValue initializer fails
     ///
     /// - returns: An array of the RawRepresentable value, with all nils removed or nil if anything throws
-    public func optionalFrom<T: RawRepresentable>(_ field: String, defaultValue: T? = nil) ->
+    public func optionalFrom<T: RawRepresentable>(_ field: String, defaultValue: T? = nil, delimiter: String = ".") ->
         [T]? where T.RawValue: Convertible, T.RawValue == T.RawValue.ConvertedType
     {
-        return try? self.from(field, defaultValue: defaultValue)
+        return try? self.from(field, defaultValue: defaultValue, delimiter: delimiter)
     }
 
     // MARK: - T: Mappable
@@ -144,8 +144,8 @@ public struct Mapper {
     /// - throws: MapperError.typeMismatchError if the field exists but isn't an NSDictionary
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type T
-    public func from<T: Mappable>(_ field: String) throws -> T {
-        let value = try self.JSONFromField(field)
+    public func from<T: Mappable>(_ field: String, delimiter: String = ".") throws -> T {
+        let value = try self.JSONFromField(field, delimiter: delimiter)
         if let JSON = value as? NSDictionary {
             return try T(map: Mapper(JSON: JSON))
         }
@@ -167,8 +167,8 @@ public struct Mapper {
     /// - throws: Any errors produced by the subsequent Mappable initializers
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type [T]
-    public func from<T: Mappable>(_ field: String) throws -> [T] {
-        let value = try self.JSONFromField(field)
+    public func from<T: Mappable>(_ field: String, delimiter: String = ".") throws -> [T] {
+        let value = try self.JSONFromField(field, delimiter: delimiter)
         if let JSON = value as? [NSDictionary] {
             return try JSON.map { try T(map: Mapper(JSON: $0)) }
         }
@@ -184,8 +184,8 @@ public struct Mapper {
     ///                    entire data set
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type T otherwise nil
-    public func optionalFrom<T: Mappable>(_ field: String) -> T? {
-        return try? self.from(field)
+    public func optionalFrom<T: Mappable>(_ field: String, delimiter: String = ".") -> T? {
+        return try? self.from(field, delimiter: delimiter)
     }
 
     /// Get an optional array of Mappable values from the given field in the source data
@@ -198,8 +198,8 @@ public struct Mapper {
     ///                    entire data set
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type [T]
-    public func optionalFrom<T: Mappable>(_ field: String) -> [T]? {
-        return try? self.from(field)
+    public func optionalFrom<T: Mappable>(_ field: String, delimiter: String = ".") -> [T]? {
+        return try? self.from(field, delimiter: delimiter)
     }
 
     /// Get an optional value from the given fields and source data. This returns the first non-nil value
@@ -208,9 +208,9 @@ public struct Mapper {
     /// - parameter fields: The array of fields to check from the source data.
     ///
     /// - returns: The first non-nil value to be produced from the array of fields, or nil if none exist
-    public func optionalFrom<T: Mappable>(_ fields: [String]) -> T? {
+    public func optionalFrom<T: Mappable>(_ fields: [String], delimiter: String = ".") -> T? {
         for field in fields {
-            if let value: T = try? self.from(field) {
+            if let value: T = try? self.from(field, delimiter: delimiter) {
                 return value
             }
         }
@@ -226,9 +226,9 @@ public struct Mapper {
     /// - throws: MapperError.missingFieldError if none of the fields have an acceptable value.
     ///
     /// - returns: The first non-nil value to be produced from the array of fields.
-    public func from<T: Mappable>(_ fields: [String]) throws -> T {
+    public func from<T: Mappable>(_ fields: [String], delimiter: String = ".") throws -> T {
         for field in fields {
-            if let value: T = try? self.from(field) {
+            if let value: T = try? self.from(field, delimiter: delimiter) {
                 return value
             }
         }
@@ -248,8 +248,8 @@ public struct Mapper {
     /// - throws: Any error produced by the custom Convertible implementation
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type T
-    public func from<T: Convertible>(_ field: String) throws -> T where T == T.ConvertedType {
-        return try self.from(field, transformation: T.fromMap)
+    public func from<T: Convertible>(_ field: String, delimiter: String = ".") throws -> T where T == T.ConvertedType {
+        return try self.from(field, transformation: T.fromMap, delimiter: delimiter)
     }
 
     /// Get a Convertible value from a field in the source data
@@ -264,8 +264,8 @@ public struct Mapper {
     /// - note: This function is necessary because Swift does't coerce the from that returns T to an optional
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type Optional<T>
-    public func from<T: Convertible>(_ field: String) throws -> T? where T == T.ConvertedType {
-        return try self.from(field, transformation: T.fromMap)
+    public func from<T: Convertible>(_ field: String, delimiter: String = ".") throws -> T? where T == T.ConvertedType {
+        return try self.from(field, transformation: T.fromMap, delimiter: delimiter)
     }
 
     /// Get an array of Convertible values from a field in the source data
@@ -280,8 +280,8 @@ public struct Mapper {
     /// - throws: Any error produced by the subsequent Convertible implementations
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type [T]
-    public func from<T: Convertible>(_ field: String) throws -> [T] where T == T.ConvertedType {
-        let value = try self.JSONFromField(field)
+    public func from<T: Convertible>(_ field: String, delimiter: String = ".") throws -> [T] where T == T.ConvertedType {
+        let value = try self.JSONFromField(field, delimiter: delimiter)
         if let JSON = value as? [Any] {
             return try JSON.map(T.fromMap)
         }
@@ -297,8 +297,8 @@ public struct Mapper {
     ///                    entire data set
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type T otherwise nil
-    public func optionalFrom<T: Convertible>(_ field: String) -> T? where T == T.ConvertedType {
-        return try? self.from(field, transformation: T.fromMap)
+    public func optionalFrom<T: Convertible>(_ field: String, delimiter: String = ".") -> T? where T == T.ConvertedType {
+        return try? self.from(field, transformation: T.fromMap, delimiter: delimiter)
     }
 
     /// Get an optional array of Convertible values from a field in the source data
@@ -309,8 +309,8 @@ public struct Mapper {
     ///                    entire data set
     ///
     /// - returns: The value for the given field, if it can be converted to the expected type [T]
-    public func optionalFrom<T: Convertible>(_ field: String) -> [T]? where T == T.ConvertedType {
-        return try? self.from(field)
+    public func optionalFrom<T: Convertible>(_ field: String, delimiter: String = ".") -> [T]? where T == T.ConvertedType {
+        return try? self.from(field, delimiter: delimiter)
     }
 
     /// Get a dictionary of Convertible values from a field in the source data
@@ -324,10 +324,10 @@ public struct Mapper {
     /// - throws: Any error produced by the Convertible implementation of either expected type
     ///
     /// - returns: A dictionary where the keys and values are created using their convertible implementations
-    public func from<U: Convertible, T: Convertible>(_ field: String) throws -> [U: T]
+    public func from<U: Convertible, T: Convertible>(_ field: String, delimiter: String = ".") throws -> [U: T]
         where U == U.ConvertedType, T == T.ConvertedType
     {
-        let object = try self.JSONFromField(field)
+        let object = try self.JSONFromField(field, delimiter: delimiter)
         guard let data = object as? [AnyHashable: Any] else {
             throw MapperError.typeMismatchError(field: field, value: object, type: [AnyHashable: Any].self)
         }
@@ -349,10 +349,10 @@ public struct Mapper {
     ///
     /// - returns: A dictionary where the keys and values are created using their convertible implementations
     ///            or nil if anything throws
-    public func optionalFrom<U: Convertible, T: Convertible>(_ field: String) -> [U: T]?
+    public func optionalFrom<U: Convertible, T: Convertible>(_ field: String, delimiter: String = ".") -> [U: T]?
         where U == U.ConvertedType, T == T.ConvertedType
     {
-        return try? self.from(field)
+        return try? self.from(field, delimiter: delimiter)
     }
 
     /// Get an optional value from the given fields and source data. This returns the first non-nil value
@@ -361,9 +361,9 @@ public struct Mapper {
     /// - parameter fields: The array of fields to check from the source data.
     ///
     /// - returns: The first non-nil value to be produced from the array of fields, or nil if none exist
-    public func optionalFrom<T: Convertible>(_ fields: [String]) -> T? where T == T.ConvertedType {
+    public func optionalFrom<T: Convertible>(_ fields: [String], delimiter: String = ".") -> T? where T == T.ConvertedType {
         for field in fields {
-            if let value: T = try? self.from(field) {
+            if let value: T = try? self.from(field, delimiter: delimiter) {
                 return value
             }
         }
@@ -379,9 +379,9 @@ public struct Mapper {
     /// - throws: MapperError.missingFieldError if none of the fields have an acceptable value.
     ///
     /// - returns: The first non-nil value to be produced from the array of fields.
-    public func from<T: Convertible>(_ fields: [String]) throws -> T where T == T.ConvertedType {
+    public func from<T: Convertible>(_ fields: [String], delimiter: String = ".") throws -> T where T == T.ConvertedType {
         for field in fields {
-            if let value: T = try? self.from(field, transformation: T.fromMap) {
+            if let value: T = try? self.from(field, transformation: T.fromMap, delimiter: delimiter) {
                 return value
             }
         }
@@ -398,11 +398,11 @@ public struct Mapper {
     /// - throws: MapperError.missingFieldError if none of the fields have an acceptable value.
     ///
     /// - returns: The value of type T for the given field
-    public func from<T: Convertible>(_ fields: [String], transformation: (Any) throws -> T)
+    public func from<T: Convertible>(_ fields: [String], transformation: (Any) throws -> T, delimiter: String = ".")
         throws -> T where T == T.ConvertedType
     {
         for field in fields {
-            if let value: T = try? self.from(field, transformation: transformation) {
+            if let value: T = try? self.from(field, transformation: transformation, delimiter: delimiter) {
                 return value
             }
         }
@@ -423,8 +423,8 @@ public struct Mapper {
     ///           transformation function you should use `MapperError`, see the documentation there for info
     ///
     /// - returns: The value of type T for the given field
-    public func from<T>(_ field: String, transformation: (Any) throws -> T) throws -> T {
-        return try transformation(try self.JSONFromField(field))
+    public func from<T>(_ field: String, transformation: (Any) throws -> T, delimiter: String = ".") throws -> T {
+        return try transformation(try self.JSONFromField(field, delimiter: delimiter))
     }
 
     /// Get an optional typed value from the given field by using the given transformation
@@ -435,8 +435,8 @@ public struct Mapper {
     ///
     /// - returns: The value of type T for the given field, if the transformation function doesn't throw
     ///            otherwise nil
-    public func optionalFrom<T>(_ field: String, transformation: (Any) throws -> T?) -> T? {
-        return (try? transformation(try self.JSONFromField(field))).flatMap { $0 }
+    public func optionalFrom<T>(_ field: String, transformation: (Any) throws -> T?, delimiter: String = ".") -> T? {
+        return (try? transformation(try self.JSONFromField(field, delimiter: delimiter))).flatMap { $0 }
     }
 
     /// Get an optional typed value from the given fields by using the given transformation
@@ -447,9 +447,9 @@ public struct Mapper {
     ///
     /// - returns: The value of type T for the given field, if the transformation function doesn't throw
     ///            otherwise nil
-    public func optionalFrom<T>(_ fields: [String], transformation: (Any) throws -> T?) -> T? {
+    public func optionalFrom<T>(_ fields: [String], transformation: (Any) throws -> T?, delimiter: String = ".") -> T? {
         for field in fields {
-            if let value = try? transformation(try self.JSONFromField(field)) {
+            if let value = try? transformation(try self.JSONFromField(field, delimiter: delimiter)) {
                 return value
             }
         }
@@ -468,8 +468,8 @@ public struct Mapper {
     /// - throws: MapperError.missingFieldError if the field doesn't exist
     ///
     /// - returns: The object for the given field
-    private func JSONFromField(_ field: String) throws -> Any {
-        if let value = field.isEmpty ? self.JSON : self.JSON.safeValue(forKeyPath: field) {
+    private func JSONFromField(_ field: String, delimiter: String = ".") throws -> Any {
+        if let value = field.isEmpty ? self.JSON : self.JSON.safeValue(forKeyPath: field, delimiter: delimiter) {
             return value
         }
 

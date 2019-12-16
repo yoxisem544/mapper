@@ -2,9 +2,9 @@ import Foundation
 
 extension NSDictionary {
     @nonobjc
-    func safeValue(forKeyPath keyPath: String) -> Any? {
+    func safeValue(forKeyPath keyPath: String, delimiter: String = ".") -> Any? {
         var object: Any? = self
-        var keys = keyPath.split(separator: ".").map(String.init)
+        var keys = keyPath.components(separatedBy: delimiter)
 
         while !keys.isEmpty, let currentObject = object {
             let key = keys.remove(at: 0)
